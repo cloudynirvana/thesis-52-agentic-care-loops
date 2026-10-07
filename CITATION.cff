@@ -7,8 +7,7 @@ authors:
     given-names: Kelechi Emeka
     email: kelechiogbonna300@gmail.com
     alias: cloudynirvana
-    # Add your ORCID iD once registered at https://orcid.org, in this form:
-    # orcid: "https://orcid.org/0000-0000-0000-0000"
+    orcid: "https://orcid.org/0009-0006-0065-8226"
 abstract: >-
   A pathology report states what a tumour is, not what should happen next. This thesis treats
   the care of one patient as a partially observed control problem: the state is hidden, actions
@@ -41,20 +40,24 @@ license: MIT
 date-released: "2026-09-29"
 url: "https://github.com/cloudynirvana/thesis-52-agentic-care-loops"
 repository-code: "https://github.com/cloudynirvana/thesis-52-agentic-care-loops"
-# After the first Zenodo release mints a DOI, uncomment and fill in the concept DOI:
-# identifiers:
-#   - type: doi
-#     value: "10.5281/zenodo.XXXXXXX"
-#     description: "Concept DOI, all versions"
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.23210715"
+    description: "Zenodo deposit"
+# If the Zenodo record also shows a separate "Cite all versions" (concept) DOI,
+# add it here as a second identifier with description "Concept DOI, all versions".
+doi: "10.5281/zenodo.23210715"
 preferred-citation:
   type: thesis
   title: "Closed-Loop Agentic Care Planning for Cervical Cancer: A Gated Action-Observation Framework, Synthetic Worked Example and Study Protocol"
   authors:
     - family-names: Ogbonna
       given-names: Kelechi Emeka
+      orcid: "https://orcid.org/0009-0006-0065-8226"
   year: 2026
   month: 9
   url: "https://github.com/cloudynirvana/thesis-52-agentic-care-loops"
+  doi: "10.5281/zenodo.23210715"
   notes: >-
     Thesis #52. Computational and health-systems research, protocol stage. Synthetic worked
     example only; no outcome data. References 1-2 and 10-15 unverified at deposit. Claim-level

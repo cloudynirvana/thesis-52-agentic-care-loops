@@ -1,5 +1,8 @@
 # Closed-Loop Agentic Care Planning for Cervical Cancer: A Gated Action–Observation Framework, Synthetic Worked Example and Study Protocol
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23210715.svg)](https://doi.org/10.5281/zenodo.23210715)
+[![ORCID](https://img.shields.io/badge/ORCID-0009--0006--0065--8226-a6ce39)](https://orcid.org/0009-0006-0065-8226)
+
 A pathology report states what a tumour is. It does not say how far the disease has spread,
 whether the patient can tolerate treatment, what the local hospital can deliver, or what should
 happen next. This thesis treats the care of one patient as a partially observed control problem:
@@ -107,13 +110,13 @@ python3 build_pdf.py
 ## Cite
 
 Ogbonna KE. Closed-loop agentic care planning for cervical cancer: a gated action–observation
-framework, synthetic worked example and study protocol [Internet]. Thesis #52 computational and
-health-systems research thesis. 29 September 2026 [cited YYYY Mon DD]. Available from:
-https://github.com/cloudynirvana/thesis-52-agentic-care-loops
+framework, synthetic worked example and study protocol. Thesis #52 computational and
+health-systems research thesis. Zenodo. 2026. doi:10.5281/zenodo.23210715
 
-Machine-readable fields are in [`CITATION.cff`](CITATION.cff). **Once a Zenodo release has
-minted a DOI, add it to `CITATION.cff` and to the citation above.** Do not add a DOI before one
-exists.
+Machine-readable fields are in [`CITATION.cff`](CITATION.cff). The DOI resolves to the Zenodo
+deposit of release `v1.0.0`: https://doi.org/10.5281/zenodo.23210715
+
+ORCID iD: [https://orcid.org/0009-0006-0065-8226](https://orcid.org/0009-0006-0065-8226)
 
 Hub index, for cataloguing only:
 [research-theses-hub](https://github.com/cloudynirvana/research-theses-hub).

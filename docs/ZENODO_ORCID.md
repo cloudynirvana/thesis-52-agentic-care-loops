@@ -1,5 +1,9 @@
 # Getting a DOI: ORCID, then Zenodo
 
+> **Done for v1.0.0 (7 October 2026).**
+> DOI: https://doi.org/10.5281/zenodo.23210715 · ORCID: https://orcid.org/0009-0006-0065-8226
+> The steps below remain as the procedure for later releases.
+
 Do these in order. ORCID first, because the Zenodo record should carry it.
 
 ---
