@@ -1,0 +1,46 @@
+# Publish the synthetic case board to GitHub Pages.
+#
+# The site is apps/case_board/ only. The thesis, claims ledger and the rest of
+# the repository are not published as a website; they are read on GitHub.
+name: pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: pip install --quiet pyyaml
+
+      - name: Gate on patient-identifier scan before publishing
+        run: |
+          curl -fsSL -o /tmp/thesis_check.py \
+            https://raw.githubusercontent.com/cloudynirvana/research-theses-hub/main/scripts/thesis_check.py
+          python3 /tmp/thesis_check.py .
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/case_board
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
