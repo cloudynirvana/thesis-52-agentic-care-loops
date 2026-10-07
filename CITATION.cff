@@ -1,0 +1,61 @@
+cff-version: 1.2.0
+message: "If you cite this computational and health-systems research thesis, please use the metadata below."
+type: thesis
+title: "Closed-Loop Agentic Care Planning for Cervical Cancer: A Gated Action-Observation Framework, Synthetic Worked Example and Study Protocol"
+authors:
+  - family-names: Ogbonna
+    given-names: Kelechi Emeka
+    email: kelechiogbonna300@gmail.com
+    alias: cloudynirvana
+    # Add your ORCID iD once registered at https://orcid.org, in this form:
+    # orcid: "https://orcid.org/0000-0000-0000-0000"
+abstract: >-
+  A pathology report states what a tumour is, not what should happen next. This thesis treats
+  the care of one patient as a partially observed control problem: the state is hidden, actions
+  either gather information or change the state, and decision gates stop a plan from committing
+  to a therapeutic class until the observations that decide it are present. An agent maintains
+  the loop by structuring reports, holding the observation record, ranking unknown observations
+  by the pathway branches they switch, mapping observations to guideline options with their
+  evidence, matching trials, and raising safety and timing alerts. Clinicians stage, choose,
+  dose and consent. The framework is specified as a disease-independent case schema, a rule set
+  per pathology, an evidence store and a five-phase loop, and is demonstrated on one invented
+  cervical cancer case in which four misreadings are seeded as test items. Seventeen agent
+  capabilities are named across six layers. Four evaluation studies are proposed with stated
+  hypotheses and sample sizes: retrospective concordance with tumour-board decisions, process
+  timing, cross-pathology reuse, and an exploratory late-stage palliative pathway. None has been
+  run. Protocol stage, no outcome data. Research only. Not a medical device, not clinical
+  decision support in use, not a dose, not a cure.
+keywords:
+  - agentic medicine
+  - closed-loop care
+  - partially observable decision process
+  - value of information
+  - decision gates
+  - tumour board
+  - cervical cancer
+  - low-resource oncology
+  - clinical workflow
+  - study protocol
+  - research-only
+license: MIT
+date-released: "2026-09-29"
+url: "https://github.com/cloudynirvana/thesis-52-agentic-care-loops"
+repository-code: "https://github.com/cloudynirvana/thesis-52-agentic-care-loops"
+# After the first Zenodo release mints a DOI, uncomment and fill in the concept DOI:
+# identifiers:
+#   - type: doi
+#     value: "10.5281/zenodo.XXXXXXX"
+#     description: "Concept DOI, all versions"
+preferred-citation:
+  type: thesis
+  title: "Closed-Loop Agentic Care Planning for Cervical Cancer: A Gated Action-Observation Framework, Synthetic Worked Example and Study Protocol"
+  authors:
+    - family-names: Ogbonna
+      given-names: Kelechi Emeka
+  year: 2026
+  month: 9
+  url: "https://github.com/cloudynirvana/thesis-52-agentic-care-loops"
+  notes: >-
+    Thesis #52. Computational and health-systems research, protocol stage. Synthetic worked
+    example only; no outcome data. References 1-2 and 10-15 unverified at deposit. Claim-level
+    verification status in docs/claims_ledger.csv.

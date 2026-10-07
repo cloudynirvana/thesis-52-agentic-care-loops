@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+THESIS.pdf
+.DS_Store
+node_modules/

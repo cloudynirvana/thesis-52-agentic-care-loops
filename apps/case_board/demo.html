@@ -1,0 +1,840 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Confluence Case Board (synthetic demo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,650&display=swap">
+<style>
+/* Layout: a tumour-board worksheet. One scrolling page, sticky section index,
+   inputs on the left rail drive every downstream panel. Teal = cervical-cancer ribbon. */
+:root {
+  --bg: #f3f6f6;
+  --surface: #ffffff;
+  --ink: #13201f;
+  --ink-2: #435655;
+  --muted: #6d7f7e;
+  --line: #d6e0df;
+  --accent: #0b7471;
+  --accent-soft: #e0f0ee;
+  --ok: #1d7436;
+  --ok-soft: #e3f3e7;
+  --warn: #9a5700;
+  --warn-soft: #fbf0dc;
+  --crit: #b3261e;
+  --crit-soft: #fbe6e4;
+  --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1414; --surface: #142020; --ink: #e2eceb; --ink-2: #a8bab9; --muted: #7d9190;
+    --line: #263938; --accent: #4fc4bd; --accent-soft: #163230;
+    --ok: #62c47f; --ok-soft: #15291c; --warn: #e2a74a; --warn-soft: #2d2412;
+    --crit: #f0766c; --crit-soft: #331816; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1414; --surface: #142020; --ink: #e2eceb; --ink-2: #a8bab9; --muted: #7d9190;
+  --line: #263938; --accent: #4fc4bd; --accent-soft: #163230;
+  --ok: #62c47f; --ok-soft: #15291c; --warn: #e2a74a; --warn-soft: #2d2412;
+  --crit: #f0766c; --crit-soft: #331816; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 var(--font-body); }
+[hidden] { display: none !important; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 64px; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 650; text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); line-height: 1.1; }
+h2 { font-size: 1.5rem; line-height: 1.2; }
+h3 { font-size: 1.08rem; line-height: 1.3; }
+p { margin: 0; }
+.eyebrow { font: 500 0.72rem/1 var(--font-data); letter-spacing: 0.09em; text-transform: uppercase; color: var(--accent); }
+.muted { color: var(--muted); }
+.small { font-size: 0.86rem; }
+.mono { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* header */
+.head { display: grid; gap: 14px; padding-bottom: 22px; border-bottom: 1px solid var(--line); }
+.head .lede { max-width: 72ch; color: var(--ink-2); }
+.notice { display: flex; gap: 10px; align-items: flex-start; background: var(--warn-soft); color: var(--ink); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); border-radius: var(--r); padding: 10px 14px; font-size: 0.88rem; max-width: 90ch; }
+.notice b { color: var(--warn); }
+
+/* section index */
+.index { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); margin-inline: -20px; padding: 10px 20px; overflow-x: auto; }
+.index ol { list-style: none; margin: 0; padding: 0; display: flex; gap: 6px; white-space: nowrap; }
+.index a { display: inline-block; padding: 5px 10px; border-radius: 999px; text-decoration: none; color: var(--ink-2); font-size: 0.84rem; border: 1px solid transparent; }
+.index a:hover { border-color: var(--line); color: var(--ink); }
+.index .n { font-family: var(--font-data); color: var(--muted); margin-right: 5px; font-size: 0.75rem; }
+
+section { padding-top: 40px; display: grid; gap: 18px; scroll-margin-top: 56px; }
+.sec-head { display: grid; gap: 6px; max-width: 78ch; }
+.sec-head p { color: var(--ink-2); }
+
+/* layout grids */
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 18px; }
+.grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; }
+.grid-2 > *, .grid-3 > * { min-width: 0; }
+.split { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 18px; }
+@media (max-width: 860px) { .split { grid-template-columns: 1fr; } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; display: grid; gap: 12px; align-content: start; }
+
+/* report transcription */
+.report { font-family: var(--font-data); font-size: 0.85rem; line-height: 1.6; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; display: grid; gap: 10px; }
+.report dt { color: var(--accent); font-weight: 500; letter-spacing: 0.04em; }
+.report dd { margin: 0; }
+.report mark { background: var(--accent-soft); color: var(--ink); padding: 0 2px; border-radius: 2px; }
+
+/* feature table */
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+th { font: 500 0.72rem/1.2 var(--font-data); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); background: color-mix(in srgb, var(--accent-soft) 45%, var(--surface)); }
+tr:last-child td { border-bottom: 0; }
+td.feat { font-weight: 600; min-width: 160px; }
+td.num { font-family: var(--font-data); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* chips / status */
+.chip { display: inline-flex; align-items: center; gap: 5px; font: 500 0.72rem/1 var(--font-data); letter-spacing: 0.04em; padding: 4px 8px; border-radius: 999px; white-space: nowrap; border: 1px solid transparent; }
+.chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.chip.ok { color: var(--ok); background: var(--ok-soft); }
+.chip.warn { color: var(--warn); background: var(--warn-soft); }
+.chip.crit { color: var(--crit); background: var(--crit-soft); }
+.chip.info { color: var(--accent); background: var(--accent-soft); }
+
+/* correction list */
+.corr { display: grid; gap: 10px; }
+.corr li { list-style: none; display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; }
+.corr ul { margin: 0; padding: 0; display: grid; gap: 12px; }
+.corr .said { text-decoration: line-through; text-decoration-color: var(--crit); color: var(--ink-2); }
+
+/* workflow */
+.loop-row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 18px; }
+@media (max-width: 860px) { .loop-row { grid-template-columns: 1fr; } }
+.loop { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.loop .node { font: 500 0.8rem var(--font-data); letter-spacing: 0.05em; text-transform: uppercase; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.loop .node.on { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.loop .arr { color: var(--muted); }
+.ctrl-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.queue { margin: 0; padding: 0; display: grid; gap: 8px; }
+.queue li { list-style: none; display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: start; padding: 9px 12px; border: 1px solid var(--line); border-radius: 5px; }
+.queue li > div { min-width: 0; }
+.q-side { display: grid; justify-items: end; gap: 4px; }
+.own { font: 0.72rem var(--font-data); color: var(--muted); }
+.phases { display: grid; gap: 14px; }
+.phase { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; display: grid; gap: 10px; }
+.phase.current { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.phase.locked { opacity: 0.62; }
+.phase header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+.phase header h3 { flex: 1 1 auto; }
+.ph-n { font: 500 0.72rem var(--font-data); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.obs-list { display: grid; gap: 8px; }
+.obs { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 8px 16px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 5px; background: var(--bg); }
+@media (max-width: 700px) { .obs { grid-template-columns: 1fr; } }
+.obs.is-known { background: color-mix(in srgb, var(--ok-soft) 60%, var(--bg)); }
+.obs-act, .obs-in { display: grid; gap: 4px; align-content: start; min-width: 0; }
+.obs-in label { font-size: 0.82rem; font-weight: 600; color: var(--ink-2); }
+.kind { font: 500 0.66rem var(--font-data); letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); }
+.req { font: 500 0.66rem var(--font-data); color: var(--crit); letter-spacing: 0.05em; text-transform: uppercase; }
+.pathcard { display: grid; gap: 12px; border-top: 1px solid var(--line); padding-top: 14px; }
+.pathcard.esc h3:first-child { color: var(--crit); }
+.log { margin: 0; padding: 0; display: grid; gap: 6px; max-height: 280px; overflow: auto; }
+.log li { list-style: none; display: grid; grid-template-columns: 120px 1fr; gap: 10px; font-size: 0.88rem; }
+.qs { margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; }
+.qs li { list-style: none; }
+/* inputs rail + outputs */
+.board { display: grid; grid-template-columns: 300px 1fr; gap: 18px; align-items: start; }
+.board > * { min-width: 0; }
+@media (max-width: 860px) { .board { grid-template-columns: 1fr; } }
+.rail { position: sticky; top: 64px; }
+@media (max-width: 860px) { .rail { position: static; } }
+.field { display: grid; gap: 5px; }
+.field label { font-size: 0.8rem; font-weight: 600; color: var(--ink-2); }
+select, input[type="range"] { width: 100%; }
+select { font: inherit; font-size: 0.9rem; padding: 7px 9px; border-radius: 5px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.readiness { display: grid; gap: 6px; }
+.meter { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.meter > i { display: block; height: 100%; background: var(--accent); border-radius: 4px; transition: width .3s; }
+@media (prefers-reduced-motion: reduce) { .meter > i { transition: none; } }
+
+.gates { display: grid; gap: 8px; margin: 0; padding: 0; }
+.gates li { list-style: none; display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 9px 12px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); }
+.gates .why { font-size: 0.8rem; color: var(--muted); }
+
+.path { display: grid; gap: 0; margin: 0; padding: 0; counter-reset: step; }
+.path > li { list-style: none; display: grid; grid-template-columns: 34px 1fr; gap: 12px; padding-bottom: 18px; position: relative; }
+.path > li::before { counter-increment: step; content: counter(step); width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font: 500 0.8rem var(--font-data); background: var(--accent); color: var(--surface); z-index: 1; }
+.path > li:not(:last-child)::after { content: ""; position: absolute; left: 13px; top: 30px; bottom: 2px; width: 2px; background: var(--line); }
+.path .body { display: grid; gap: 6px; padding-top: 3px; }
+.path .rx { font-family: var(--font-data); font-size: 0.82rem; background: var(--bg); border: 1px solid var(--line); border-radius: 5px; padding: 8px 10px; color: var(--ink-2); }
+.path .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.alt { border-left: 3px solid var(--line); padding-left: 12px; display: grid; gap: 4px; }
+.alt.flag { border-left-color: var(--warn); }
+.alt.stop { border-left-color: var(--crit); }
+.banner { padding: 10px 14px; border-radius: 5px; font-size: 0.88rem; }
+.banner.warn { background: var(--warn-soft); }
+.banner.info { background: var(--accent-soft); }
+
+/* charts */
+.chart { width: 100%; height: auto; display: block; overflow: visible; }
+.chart text { fill: var(--muted); font: 11px var(--font-data); }
+.chart .lbl { fill: var(--ink); font: 12px var(--font-body); }
+.chart .grid { stroke: var(--line); stroke-width: 1; }
+.chart .ref { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 3 3; }
+.chart .ci { stroke: var(--accent); stroke-width: 2; stroke-linecap: round; }
+.chart .pt { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+.chart .row-hit { fill: transparent; cursor: default; }
+.chart .row-hit:hover, .chart .row-hit.on { fill: var(--accent-soft); }
+.chart .curve { fill: none; stroke: var(--accent); stroke-width: 2; }
+.chart .area { fill: var(--accent); opacity: 0.12; }
+.chart .thr { stroke: var(--crit); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.chart .under { fill: var(--crit); opacity: 0.10; }
+.chart .xh { stroke: var(--ink-2); stroke-width: 1; }
+.chart .xh-dot { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+.tip { position: fixed; pointer-events: none; z-index: 20; background: var(--ink); color: var(--bg); font-size: 0.8rem; line-height: 1.4; padding: 8px 10px; border-radius: 5px; max-width: 280px; box-shadow: 0 4px 16px rgb(0 0 0 / 0.18); }
+.stat { display: flex; flex-wrap: wrap; gap: 18px; }
+.stat div { display: grid; gap: 2px; }
+.stat b { font: 500 1.35rem/1.1 var(--font-data); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 0.78rem; color: var(--muted); }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.presets button, .btn { font: 500 0.8rem var(--font-body); padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); cursor: pointer; }
+.presets button[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+.presets button:hover { border-color: var(--accent); }
+.rng { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; }
+.rng output { font-family: var(--font-data); font-size: 0.85rem; min-width: 70px; text-align: right; }
+.rng label { grid-column: 1 / -1; font-size: 0.8rem; font-weight: 600; color: var(--ink-2); }
+
+/* trials */
+.trial { display: grid; gap: 6px; }
+.trial .id { font-family: var(--font-data); font-size: 0.78rem; color: var(--accent); }
+.trial .fit { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* pipeline */
+.pipe { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr)); gap: 10px; margin: 0; padding: 0; counter-reset: p; }
+.pipe li { list-style: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; display: grid; gap: 6px; align-content: start; }
+.pipe li::before { counter-increment: p; content: "Stage " counter(p); font: 500 0.7rem var(--font-data); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.pipe li.gate { border-color: var(--accent); background: var(--accent-soft); }
+.pipe strong { font-size: 0.95rem; }
+.pipe p { font-size: 0.82rem; color: var(--ink-2); }
+footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 0.8rem; color: var(--muted); display: grid; gap: 6px; max-width: 90ch; }
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <span class="eyebrow">Project Confluence · Case board · Synthetic demonstration case</span>
+    <h1>Invasive squamous cell carcinoma of the cervix (invented demonstration case)</h1>
+    <p class="lede">A closed-loop worksheet for the multidisciplinary tumour board. It reads the pathology report into structured findings, then runs care as a cycle: each action has an owner, each result is recorded as an observation, and each observation opens the next action or changes the pathway. Evidence, matched trials and the drug-delivery physics of a fibrotic stroma update with it.</p>
+    <div class="notice" role="note"><b>Synthetic case. Not a real patient.</b> Every finding on this page was invented to demonstrate the software. No patient, hospital or report is behind it. <b>For discussion, not a prescription.</b> This board organises published evidence for a treating team and for expert review. It is not a medical device. It does not stage, prescribe or dose. Every option here needs confirmation by the treating gynaecologic oncologist, radiation oncologist and pathologist, using current NCCN / ESMO / FIGO guidance and local availability.</div>
+  </header>
+
+  <nav class="index" aria-label="Sections">
+    <ol>
+      <li><a href="#report"><span class="n">1</span>Report</a></li>
+      <li><a href="#reading"><span class="n">2</span>Reading it right</a></li>
+      <li><a href="#board"><span class="n">3</span>Workflow</a></li>
+      <li><a href="#evidence"><span class="n">4</span>Evidence</a></li>
+      <li><a href="#delivery"><span class="n">5</span>Stroma &amp; delivery</a></li>
+      <li><a href="#trials"><span class="n">6</span>Trials</a></li>
+      <li><a href="#review"><span class="n">7</span>Open questions</a></li>
+      <li><a href="#framework"><span class="n">8</span>Framework</a></li>
+    </ol>
+  </nav>
+
+  <!-- 1. REPORT -->
+  <section id="report">
+    <div class="sec-head">
+      <span class="eyebrow">1 · Source document</span>
+      <h2>What the pathology report says, and what each finding means</h2>
+      <p>The report is transcribed on the left. Each finding is read into a clinical implication on the right. The column "Weight" shows how much the finding should move treatment on its own.</p>
+    </div>
+    <div class="split">
+      <dl class="report" aria-label="Invented pathology report">
+        <div><dt>CLINICAL DETAILS</dt><dd>Cervical mass, <mark>4.6 cm on MRI</mark> (invented value).</dd></div>
+        <div><dt>MACROSCOPY</dt><dd>Received in 10% formalin: several fragments of grey-white tissue, aggregate 1.5 × 1.2 × 0.4 cm. Entirely submitted.</dd></div>
+        <div><dt>MICROSCOPY</dt><dd>Invasive nests and sheets of <mark>atypical squamous cells</mark> with moderate pleomorphism and no keratinization, set in <mark>fibrotic stroma</mark>. <mark>Lymphovascular space invasion</mark> is present. Mitotic figures <mark>(8 / 10 HPFs)</mark>.</dd></div>
+        <div><dt>DIAGNOSIS</dt><dd>Cervical biopsy: <mark>invasive squamous cell carcinoma, non-keratinizing, moderately differentiated; tumour present at the edge of the biopsy</mark>.</dd></div>
+      </dl>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Finding</th><th>Implication</th><th>Weight</th></tr></thead>
+          <tbody id="featRows"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. CORRECTIONS -->
+  <section id="reading">
+    <div class="sec-head">
+      <span class="eyebrow">2 · Reading it right</span>
+      <h2>Four points in the working interpretation to correct before the board meets</h2>
+      <p>These change what the team should expect and ask for. They come from how cervical cancer is staged and treated, not from the model.</p>
+    </div>
+    <div class="panel corr">
+      <ul id="corrList"></ul>
+    </div>
+  </section>
+
+  <!-- 3. WORKFLOW -->
+  <section id="board">
+    <div class="sec-head">
+      <span class="eyebrow">3 · Workflow</span>
+      <h2>Act, observe, update, repeat</h2>
+      <p>Care runs as a closed loop. Each action has an owner and produces an observation. Each observation is recorded here, and it unlocks or changes the next action. Stage decides the pathway, biomarkers and fitness refine it, and response decides whether the patient moves to surveillance or to escalation.</p>
+    </div>
+
+    <div class="loop-row">
+      <div class="panel">
+        <div class="loop" id="loop" aria-label="Care loop position"></div>
+        <div class="readiness">
+          <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:baseline;">
+            <h3>Where the case stands</h3>
+            <span class="mono small" id="readyTxt"></span>
+          </div>
+          <div class="meter" aria-hidden="true"><i id="readyBar"></i></div>
+        </div>
+        <div class="ctrl-row">
+          <button class="btn" id="demoBtn" type="button">Play a hypothetical scenario</button>
+          <button class="btn" id="resetBtn" type="button">Reset to report only</button>
+        </div>
+        <p class="small muted" id="modeNote">Showing what the pathology report alone tells us. Results you enter stay in this browser only.</p>
+      </div>
+      <div class="panel">
+        <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:baseline;">
+          <h3>Next actions</h3><span class="mono small muted" id="queueCount"></span>
+        </div>
+        <ol class="queue" id="queue"></ol>
+      </div>
+    </div>
+
+    <div class="phases" id="phases"></div>
+
+    <div class="panel">
+      <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:baseline;">
+        <h3>Observation log</h3><span class="small muted">Newest first, stored in this browser</span>
+      </div>
+      <ol class="log" id="log"></ol>
+    </div>
+  </section>
+
+  <!-- 4. EVIDENCE -->
+  <section id="evidence">
+    <div class="sec-head">
+      <span class="eyebrow">4 · Evidence</span>
+      <h2>Overall-survival hazard ratios behind each option</h2>
+      <p>Each row is the randomised trial that put the option into guidelines. A hazard ratio below 1 means fewer deaths with the added treatment. Rows that fit the stage selected above are highlighted. Hover a row for its population.</p>
+    </div>
+    <div class="panel">
+      <div style="overflow-x:auto;"><svg class="chart" id="forest" role="img" aria-label="Forest plot of overall-survival hazard ratios"></svg></div>
+      <p class="small muted">Point = hazard ratio for overall survival, line = 95% confidence interval, log scale. Values as reported in the primary publications. Check each against the source before citing it clinically.</p>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Trial</th><th>Setting</th><th>Regimen</th><th>OS HR (95% CI)</th><th>Headline result</th></tr></thead>
+        <tbody id="evRows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 5. DELIVERY -->
+  <section id="delivery">
+    <div class="sec-head">
+      <span class="eyebrow">5 · Stroma &amp; delivery</span>
+      <h2>Desmoplastic stroma makes delivery a transport problem</h2>
+      <p>Dense fibrotic stroma lengthens the distance from a capillary to the tumour cells it feeds. A drug or oxygen that diffuses in while being consumed falls off with depth. The profile below is the minimal spatial model a lumped ODE cannot express, the question the T11 and T32 chapters of the CONFLUENCE thesis series take up. Parameters are illustrative, not fitted to the synthetic case.</p>
+    </div>
+    <div class="grid-2">
+      <div class="panel">
+        <h3>Controls</h3>
+        <div class="presets" role="group" aria-label="Agent presets" id="presets"></div>
+        <div class="rng"><label for="rg-L">Distance from nearest vessel to farthest tumour cell</label><input type="range" id="rg-L" min="50" max="600" step="10" value="300"><output id="out-L" for="rg-L"></output></div>
+        <div class="rng"><label for="rg-lam">Penetration length λ = √(D/k)</label><input type="range" id="rg-lam" min="10" max="400" step="5" value="100"><output id="out-lam" for="rg-lam"></output></div>
+        <div class="rng"><label for="rg-thr">Effective level (fraction of vessel concentration)</label><input type="range" id="rg-thr" min="0.05" max="0.8" step="0.05" value="0.3"><output id="out-thr" for="rg-thr"></output></div>
+        <p class="small muted" id="presetNote"></p>
+      </div>
+      <div class="panel">
+        <div class="stat">
+          <div><b id="st-under">–</b><span>of the distance below effective level</span></div>
+          <div><b id="st-min">–</b><span>level at the far edge</span></div>
+          <div><b id="st-depth">–</b><span>depth where it stops working</span></div>
+        </div>
+        <svg class="chart" id="diff" role="img" aria-label="Concentration against distance from vessel"></svg>
+        <p class="small muted">Steady state: C(x)/C₀ = cosh((L − x)/λ) / cosh(L/λ), no flux at the far edge.</p>
+      </div>
+    </div>
+    <div class="grid-3" id="deliveryTake"></div>
+  </section>
+
+  <!-- 6. TRIALS -->
+  <section id="trials">
+    <div class="sec-head">
+      <span class="eyebrow">6 · Trials</span>
+      <h2>Recruiting studies that match this pathology</h2>
+      <p>Pulled from ClinicalTrials.gov on 29 September 2026. A search for therapeutic cervical cancer trials with sites in Nigeria found none, only screening and implementation studies. Joining any of these would mean referral abroad, so the board should weigh travel against benefit. Stage fit updates with the selector above.</p>
+    </div>
+    <div class="grid-3" id="trialGrid"></div>
+  </section>
+
+  <!-- 7. REVIEW -->
+  <section id="review">
+    <div class="sec-head">
+      <span class="eyebrow">7 · Open questions</span>
+      <h2>Where expert review would change the plan</h2>
+      <p>These are the points where the published evidence is thin or does not fit a Nigerian treatment setting. Answers from gynaecologic oncologists, radiation oncologists and pathologists are welcome.</p>
+    </div>
+    <ol class="qs" id="qList"></ol>
+  </section>
+
+  <!-- 7. FRAMEWORK -->
+  <section id="framework">
+    <div class="sec-head">
+      <span class="eyebrow">8 · Framework</span>
+      <h2>The same board for any pathology report</h2>
+      <p>No single drug will cure every cancer. A single pipeline can still turn any pathology report into a structured, evidence-linked strategy in minutes. This synthetic case stands in for a real one. The case lives in one data object in this page, so the next pathology swaps its data and its rule set, not the interface.</p>
+    </div>
+    <ol class="pipe">
+      <li><strong>Extract</strong><p>A language model reads the report into a typed case schema: histology, grade, biopsy edge, stroma, mitoses, imaging size.</p></li>
+      <li><strong>Gate</strong><p>Rules list the facts the guideline needs that the report lacks: stage, biomarkers, fitness, access.</p></li>
+      <li><strong>Map</strong><p>A guideline rule set (NCCN / ESMO / national) turns stage and biomarkers into ranked options.</p></li>
+      <li><strong>Evidence</strong><p>Each option links to its trial, effect size and population, so the board sees why.</p></li>
+      <li><strong>Match</strong><p>Live ClinicalTrials.gov queries filter trials by stage, biomarker and geography.</p></li>
+      <li><strong>Simulate</strong><p>Research layer only: transport, PK/PD and the Confluence ODE explore sequencing and delivery questions.</p></li>
+      <li class="gate"><strong>Tumour board</strong><p>Humans stage, choose, dose and consent. Nothing leaves the pipeline without this gate.</p></li>
+    </ol>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Layer</th><th>Model or resource</th><th>What it adds</th><th>Status</th></tr></thead>
+        <tbody id="stackRows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <p>Sources: KEYNOTE-A18 (Lorusso, Lancet 2024), INTERLACE (McCormack, Lancet 2024), KEYNOTE-826 (Monk, J Clin Oncol 2023), BEATcc (Oaknin, Lancet 2024), innovaTV 301 (Vergote, NEJM 2024), EMPOWER-Cervical 1 (Tewari, NEJM 2022), DESTINY-PanTumor02 (Meric-Bernstam, J Clin Oncol 2024), LACC (Ramirez, NEJM 2018), EMBRACE-I (Pötter, Lancet Oncol 2021). FIGO 2018 staging. Trial listings: ClinicalTrials.gov API v2, retrieved 2026-09-29.</p>
+    <p>Project Confluence is a research framework, not a medical device. See DISCLAIMER.md in the repository.</p>
+  </footer>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+/* ---------- Case data: swap this object to run the board on another pathology ---------- */
+const CASE = {
+  id: "Synthetic case S-01",
+  features: [
+    { f: "Invasive SCC, non-keratinizing, moderately differentiated", imp: "Non-keratinizing cervical SCC is usually HPV-associated (often HPV 16/18). Confirm with p16 IHC; WHO 2020 splits cervical SCC into HPV-associated and HPV-independent, which carry different prognoses.", w: ["info", "Classifies"] },
+    { f: "Tumour size 4.6 cm on MRI (invented value)", imp: "Size comes from imaging and examination, not from the dimensions of a biopsy fragment. On these figures a tumour confined to the cervix would be IB3 (over 4 cm). MRI and exam still decide the stage, and the clinicians assign it.", w: ["warn", "High"] },
+    { f: "Tumour present at the biopsy edge", imp: "On a biopsy this is expected. It is not a resection margin and does not by itself mean residual disease after surgery.", w: ["info", "None alone"] },
+    { f: "Lymphovascular space invasion: present", imp: "Adds risk in surgical series and matters for adjuvant decisions after surgery. It does not stage the tumour on a biopsy.", w: ["info", "Moderate"] },
+    { f: "Fibrotic stroma, moderate", imp: "Fibrotic stroma raises interstitial pressure, lengthens diffusion distance and is linked to hypoxia. Hypoxia reduces radiation effect. See section 5.", w: ["warn", "Moderate"] },
+    { f: "Mitoses 8 / 10 HPF", imp: "Confirms a proliferative tumour. Mitotic count is not part of cervical SCC grading or staging and cannot give a reliable doubling time.", w: ["info", "Low"] }
+  ],
+  corrections: [
+    { said: "Positive biopsy edges mean residual disease, so adjuvant therapy is mandatory.", fix: "This is a biopsy. Tumour at the edge of a biopsy is expected. Treatment is set by FIGO stage. If the tumour is IB3 or higher, definitive chemoradiation is the primary treatment, not an adjuvant add-on." },
+    { said: "The biopsy fragments total 1.5 cm, so the tumour must be stage IB1.", fix: "Specimen dimensions are not tumour size. Stage comes from examination, MRI and pathology together, assigned by the clinicians." },
+    { said: "Tumour necrosis means immune cells are present, so a checkpoint inhibitor will work.", fix: "Response is predicted by PD-L1 CPS, and label eligibility by stage. Order 22C3 PD-L1 on the existing block." },
+    { said: "The goal is a 100% cure.", fix: "The goal is no evidence of disease (NED): a complete metabolic response on PET-CT at about 12 weeks after treatment, then surveillance. No regimen guarantees cure." }
+  ]
+};
+
+const EVIDENCE = [
+  { id: "a18", trial: "KEYNOTE-A18", setting: "Locally advanced, high risk", reg: "Pembrolizumab + cisplatin CRT, then pembrolizumab", hr: 0.67, lo: 0.50, hi: 0.90, head: "36-mo OS 82.6% vs 74.8%", pop: "FIGO 2014 IB2–IIB node-positive or III–IVA. FDA label: FIGO 2014 III–IVA.", groups: ["lacc"] },
+  { id: "interlace", trial: "INTERLACE", setting: "Locally advanced", reg: "6 wk carboplatin/paclitaxel induction, then CRT", hr: 0.60, lo: 0.40, hi: 0.91, head: "5-yr OS 80% vs 72%", pop: "FIGO 2008 IB1 node-positive to IVA. Low-cost and widely available.", groups: ["lacc"] },
+  { id: "kn826", trial: "KEYNOTE-826", setting: "Metastatic / recurrent, 1st line", reg: "Pembrolizumab + platinum/paclitaxel ± bevacizumab", hr: 0.60, lo: 0.49, hi: 0.74, head: "Median OS 28.6 vs 16.5 mo (CPS ≥ 1)", pop: "Persistent, recurrent or metastatic, PD-L1 CPS ≥ 1.", groups: ["met", "rec"] },
+  { id: "beatcc", trial: "BEATcc", setting: "Metastatic / recurrent, 1st line", reg: "Atezolizumab + platinum/paclitaxel + bevacizumab", hr: 0.68, lo: 0.52, hi: 0.88, head: "Median OS 32.1 vs 22.8 mo", pop: "Metastatic, persistent or recurrent; any PD-L1.", groups: ["met", "rec"] },
+  { id: "innova", trial: "innovaTV 301", setting: "Recurrent, 2nd/3rd line", reg: "Tisotumab vedotin (tissue-factor ADC)", hr: 0.70, lo: 0.54, hi: 0.89, head: "Median OS 11.5 vs 9.5 mo", pop: "Progression after 1–2 prior systemic lines.", groups: ["met", "rec"] },
+  { id: "empower", trial: "EMPOWER-Cervical 1", setting: "Recurrent, 2nd line", reg: "Cemiplimab monotherapy", hr: 0.69, lo: 0.56, hi: 0.84, head: "Median OS 12.0 vs 8.5 mo", pop: "Progression after platinum; any PD-L1.", groups: ["met", "rec"] }
+];
+
+const TRIALS = [
+  { nct: "NCT07061977", t: "Induction pembrolizumab + chemotherapy, then chemoradiation + pembrolizumab, vs chemoradiation + pembrolizumab", sp: "NCI · Phase 3 · 335 sites", groups: ["lacc3"], why: "Tests the INTERLACE and KEYNOTE-A18 ideas together, for FIGO 2018 IIIA–IVA." },
+  { nct: "NCT06079671", t: "eVOLVE-Cervical: volrustomig (PD-1/CTLA-4 bispecific) after chemoradiation", sp: "AstraZeneca · Phase 3 · 205 sites", groups: ["lacc"], why: "Maintenance for high-risk locally advanced disease that has not progressed after CRT." },
+  { nct: "NCT05764044", t: "Adjuvant chemotherapy guided by plasma cell-free HPV DNA after CRT", sp: "Hospital do Coração · Phase 3", groups: ["lacc"], why: "Uses circulating HPV DNA to find residual disease after treatment. Needs HPV+ tumour." , hpv: true },
+  { nct: "NCT05639972", t: "E7 TCR-T cell induction therapy for locoregionally advanced HPV-associated cancers", sp: "C. Hinrichs · Phase 1/2", groups: ["lacc"], why: "Engineered T cells against HPV16 E7. Requires HPV16+ and a matching HLA type (HLA-A*02:01).", hpv: true },
+  { nct: "NCT06319963", t: "Lenti-HPV-07 therapeutic HPV vaccine", sp: "Theravectys · Phase 1/2", groups: ["met", "rec"], why: "Therapeutic vaccine against HPV antigens in HPV-associated cervical cancer.", hpv: true },
+  { nct: "NCT06543576", t: "Adding radiotherapy to chemotherapy + pembrolizumab + bevacizumab in newly diagnosed IVB", sp: "UCLA Jonsson CCC · Phase 1/2", groups: ["met"], why: "For de novo stage IVB disease." },
+  { nct: "NCT07216703", t: "TroFuse-036: sacituzumab tirumotecan + pembrolizumab ± bevacizumab maintenance", sp: "Merck · Phase 3 · 177 sites", groups: ["met", "rec"], why: "First-line maintenance, PD-L1 CPS ≥ 1.", cps: true },
+  { nct: "NCT06640283", t: "Dynamic ctDNA follow-up in cervical and anal cancers", sp: "ICESP São Paulo · Phase 2", groups: ["lacc", "early"], why: "Serial HPV ctDNA to guide surveillance after treatment.", hpv: true }
+];
+
+const STACK = [
+  ["Report extraction", "Claude (Opus / Sonnet class) with a typed case schema", "Reads free-text pathology into structured fields, flags gaps", "Ready now"],
+  ["Guideline retrieval", "agents/nigeria_guideline_retriever.py + NCCN / ESMO rule set", "Local standard-of-care and dose-limit guardrails", "In repo, extend for cervix"],
+  ["Trial matching", "ClinicalTrials.gov API v2 (MCP connector)", "Live, stage-filtered recruiting studies", "Ready now"],
+  ["Slide AI", "Pathology foundation models (UNI, CONCH, Virchow, Prov-GigaPath)", "Stroma fraction, TIL density and HPV/PD-L1 prediction from the H&E slide", "Research, needs scanned slides"],
+  ["Reference cohort", "TCGA-CESC (~300 cervical cancers, RNA/DNA/clinical)", "Place a case's molecular profile against known subtypes", "Public, scripts/tcga_* adaptable"],
+  ["Neoantigen / HPV epitopes", "HLA typing + NetMHCpan / pVACseq on HPV16/18 E6/E7", "Eligibility for TCR-T and vaccine trials", "Needs HLA typing"],
+  ["Structure", "AlphaFold DB / AlphaFold 3 (scripts/alphafold_*)", "Target structure for ADC or small-molecule hypotheses", "Research only"],
+  ["Transport & dynamics", "Confluence ODE, PK/PD, and the spatial delivery model above", "Sequencing and delivery hypotheses, T11 / T32", "Research only, not for dosing"]
+];
+
+/* ---------- helpers ---------- */
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const chip = (cls, txt) => `<span class="chip ${cls}">${esc(txt)}</span>`;
+const tip = $("tip");
+function showTip(html, ev) {
+  tip.innerHTML = html; tip.hidden = false;
+  const pad = 14, w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = ev.clientX + pad, y = ev.clientY + pad;
+  if (x + w > innerWidth - 8) x = ev.clientX - w - pad;
+  if (y + h > innerHeight - 8) y = ev.clientY - h - pad;
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+}
+const hideTip = () => { tip.hidden = true; };
+
+/* ---------- section 1 & 2 ---------- */
+$("featRows").innerHTML = CASE.features.map(r =>
+  `<tr><td class="feat">${esc(r.f)}</td><td>${esc(r.imp)}</td><td>${chip(r.w[0], r.w[1])}</td></tr>`).join("");
+$("corrList").innerHTML = CASE.corrections.map(c =>
+  `<li>${chip("crit", "Revise")}<div style="display:grid; gap:4px;"><p class="said">${esc(c.said)}</p><p>${esc(c.fix)}</p></div></li>`).join("");
+
+/* ---------- section 3: closed-loop workflow ---------- */
+const O = (v, t) => ({ v, t });
+const OBS = [
+  { k: "stage", ph: 1, label: "FIGO 2018 stage", act: "MRI pelvis + PET-CT or CT chest/abdomen; exam under anaesthesia if needed", own: "Radiology · Gyn-onc",
+    opts: [O("PENDING", "Not yet staged"), O("IB1", "IB1 (≤2 cm)"), O("IB2", "IB2 (>2 to ≤4 cm)"), O("IB3", "IB3 (>4 cm, cervix only)"), O("IIA1", "IIA1 (upper vagina, ≤4 cm)"), O("IIA2", "IIA2 (upper vagina, >4 cm)"), O("IIB", "IIB (parametrium)"), O("IIIA", "IIIA (lower third vagina)"), O("IIIB", "IIIB (sidewall / hydronephrosis)"), O("IIIC1", "IIIC1 (pelvic nodes)"), O("IIIC2", "IIIC2 (para-aortic nodes)"), O("IVA", "IVA (bladder / rectal mucosa)"), O("IVB", "IVB (distant metastasis)")] },
+  { k: "hiv", ph: 1, label: "HIV status", act: "HIV test (WHO: every cervical cancer patient); CD4 and viral load if positive", own: "Lab · HIV clinic", opts: [O("unk", "Not tested"), O("neg", "Negative"), O("pos", "Positive, on ART")] },
+  { k: "renal", ph: 1, label: "Kidney function", act: "Creatinine clearance; renal ultrasound for hydronephrosis", own: "Lab", opts: [O("unk", "Not checked"), O("ok", "CrCl ≥ 50–60 mL/min"), O("low", "Below threshold / hydronephrosis")] },
+  { k: "ps", ph: 1, label: "Performance status", act: "Record ECOG, weight and nutrition", own: "Gyn-onc", opts: [O("unk", "Not recorded"), O("01", "ECOG 0–1"), O("2", "ECOG 2"), O("34", "ECOG 3–4")] },
+  { k: "hb", ph: 1, label: "Haemoglobin", act: "Full blood count", own: "Lab", opts: [O("unk", "Not checked"), O("ok", "≥ 10 g/dL"), O("low", "< 10 g/dL")] },
+  { k: "brachy", ph: 1, label: "Brachytherapy access", act: "Confirm an image-guided brachytherapy slot", own: "Radiation oncology", opts: [O("unk", "Not confirmed"), O("yes", "Available on site"), O("ref", "Needs referral")] },
+  { k: "hpv", ph: 1, label: "p16 / HPV", act: "p16 IHC on the existing block", own: "Pathology", opts: [O("unk", "Not tested"), O("pos", "p16 block-positive"), O("neg", "p16 negative")] },
+  { k: "pdl1", ph: 1, label: "PD-L1 CPS", act: "PD-L1 22C3 CPS on the existing block", own: "Pathology", opts: [O("unk", "Not tested"), O("lt1", "CPS < 1"), O("ge1", "CPS ≥ 1"), O("ge10", "CPS ≥ 10")] },
+  { k: "ici", ph: 1, label: "Immunotherapy access", act: "Confirm pembrolizumab supply and funding", own: "Pharmacy · Admin", opts: [O("unk", "Not confirmed"), O("yes", "Available / funded"), O("no", "Not available")] },
+  { k: "her2", ph: 1, label: "HER2 IHC", act: "HER2 IHC (matters if disease recurs)", own: "Pathology", opts: [O("unk", "Not tested"), O("lo", "0 / 1+ / 2+"), O("3", "3+")] },
+  { k: "mmr", ph: 1, label: "MMR / MSI", act: "MMR IHC (matters if disease recurs)", own: "Pathology", opts: [O("unk", "Not tested"), O("p", "pMMR"), O("d", "dMMR / MSI-H")] },
+  { k: "decision", ph: 2, label: "Board decision", act: "Present at tumour board; record the decision and the patient's consent", own: "Tumour board", opts: [O("unk", "Not yet presented"), O("accept", "Pathway accepted"), O("modify", "Pathway modified"), O("trial", "Referred to a trial")] },
+  { k: "tx", ph: 3, label: "Treatment status", act: "Start treatment; weekly review", own: "Clinical & radiation oncology", opts: [O("unk", "Not started"), O("on", "In progress"), O("done", "Completed")] },
+  { k: "tox", ph: 3, label: "Weekly safety check", act: "Weekly blood count, creatinine and symptom review", own: "Clinical oncology", opts: [O("unk", "Not reviewed"), O("ok", "No grade ≥ 3 toxicity"), O("cr", "Creatinine rising"), O("g3", "Neutropenia or other grade ≥ 3")] },
+  { k: "ott", ph: 3, label: "Overall treatment time", act: "Count days from first radiotherapy fraction to last", own: "Radiation oncology", lacc: true, opts: [O("unk", "Not tracked"), O("le", "≤ 56 days"), O("gt", "> 56 days")] },
+  { k: "resp", ph: 4, label: "Response", act: "PET-CT and examination about 12 weeks after treatment ends", actMet: "Restaging CT after 2–3 cycles", own: "Radiology · Gyn-onc", opts: [O("unk", "Not assessed"), O("cr", "Complete metabolic response"), O("pr", "Partial / persistent disease"), O("pd", "Progression")] },
+  { k: "surv", ph: 5, label: "Follow-up status", act: "Examination every 3 months for 2 years, then every 6 months to year 5", own: "Gyn-onc", opts: [O("unk", "No visit yet"), O("ned", "No evidence of disease"), O("rec", "Recurrence")] }
+];
+const PHASES = [
+  { n: 1, name: "Characterise", loop: "observe", sub: "Collect the facts the report does not give" },
+  { n: 2, name: "Decide", loop: "decide", sub: "Tumour board chooses the pathway" },
+  { n: 3, name: "Treat and monitor", loop: "act", sub: "Deliver treatment, watch for toxicity and delay" },
+  { n: 4, name: "Evaluate", loop: "observe", sub: "Measure response" },
+  { n: 5, name: "Follow up or escalate", loop: "update", sub: "Surveillance, or back into the loop" }
+];
+const DEFAULTS = Object.fromEntries(OBS.map(o => [o.k, o.opts[0].v]));
+const DEMO = { stage: "IIIC1", hiv: "neg", renal: "ok", ps: "01", hb: "low", brachy: "ref", hpv: "pos", pdl1: "ge1", ici: "no", her2: "lo", mmr: "p", decision: "accept", tx: "done", tox: "ok", ott: "le", resp: "pr", surv: "unk" };
+let S = { ...DEFAULTS }, LOG = [], demo = false;
+try {
+  const saved = JSON.parse(localStorage.getItem("caseboard.v2") || "null");
+  if (saved) { S = { ...DEFAULTS, ...saved.S }; LOG = saved.LOG || []; demo = !!saved.demo; }
+} catch (e) {}
+const save = () => { try { localStorage.setItem("caseboard.v2", JSON.stringify({ S, LOG, demo })); } catch (e) {} };
+const optText = (k, v) => OBS.find(o => o.k === k).opts.find(x => x.v === v)?.t ?? v;
+const known = (k) => S[k] !== OBS.find(o => o.k === k).opts[0].v;
+
+function group(stage) {
+  if (stage === "PENDING") return "pending";
+  if (["IB1", "IB2", "IIA1"].includes(stage)) return "early";
+  if (stage === "IVB") return "met";
+  if (stage === "REC") return "rec";
+  return "lacc";
+}
+const baseGroup = () => group(S.stage) === "pending" ? "lacc" : group(S.stage);
+const escalated = () => S.resp === "pd" || S.surv === "rec";
+const effGroup = () => escalated() ? "rec" : baseGroup();
+const isStage3plus = (st) => /^III|^IVA$/.test(st);
+const isCrit = (o) => {
+  if (["stage", "hiv", "renal", "ps", "decision", "tx", "resp"].includes(o.k)) return true;
+  if (o.k === "brachy") return baseGroup() === "lacc";
+  if (o.k === "pdl1") return baseGroup() === "met" || escalated();
+  return false;
+};
+const applies = (o) => !(o.lacc && baseGroup() !== "lacc");
+
+function phaseState(n) {
+  const crit1 = OBS.filter(o => o.ph === 1 && isCrit(o) && applies(o));
+  const p1 = crit1.every(o => known(o.k));
+  const p2 = known("decision"), p3 = S.tx === "done", p4 = known("resp");
+  const done = [null, p1, p2, p3, p4, S.surv === "ned" || S.surv === "rec"];
+  const open = [null, true, p1, p2, p3, p4];
+  return { done: done[n], open: open[n] };
+}
+
+function pathway(s) {
+  const g = group(s.stage) === "pending" ? "lacc" : group(s.stage);
+  const cis = s.renal === "low" ? "Weekly carboplatin AUC 2 (cisplatin-ineligible)" : "Weekly cisplatin 40 mg/m²";
+  const steps = [], alts = [];
+  let title = "", chipHtml = "";
+  const hivStep = s.hiv === "pos"
+    ? { h: "Co-manage HIV before and during treatment", b: "Continue ART with the HIV team. Tenofovir disoproxil adds kidney toxicity to cisplatin; discuss switching the backbone. Check CD4, viral load and TB status. Checkpoint inhibitors are used in well-controlled HIV.", tags: [chip("warn", "HIV positive")] }
+    : null;
+
+  if (g === "early") {
+    title = "Early-stage pathway (IB1–IB2, IIA1)";
+    chipHtml = chip("info", "Surgery or chemoradiation");
+    steps.push({ h: "Choose one primary modality", b: "Radical hysterectomy with pelvic lymph-node assessment (sentinel node where available), or definitive chemoradiation. Avoid planning both, because triple-modality treatment adds toxicity without survival gain.", rx: "Open approach. LACC trial: minimally invasive radical hysterectomy had worse disease-free and overall survival." });
+    steps.push({ h: "Adjuvant treatment from surgical pathology", b: "Positive nodes, parametria or resection margins (Peters criteria): chemoradiation. Intermediate risk from tumour size, stromal depth and LVSI (Sedlis criteria): pelvic radiotherapy.", tags: [chip("info", "Decided after surgery")] });
+    if (hivStep) steps.push(hivStep);
+    alts.push({ cls: "flag", h: "Confirm size on MRI before planning surgery", b: "Stage IB1–IB2 needs a tumour of 4 cm or less on imaging and examination. Biopsy dimensions do not measure the tumour." });
+  } else if (g === "lacc") {
+    const pending = group(s.stage) === "pending";
+    title = pending ? "Working assumption: locally advanced (IB3–IVA)" : `Locally advanced pathway (${s.stage})`;
+    chipHtml = pending ? chip("warn", "Pending staging") : chip("ok", "Stage confirmed");
+    const labelFit = isStage3plus(s.stage);
+    steps.push({ h: "Fix what would weaken radiotherapy", b: (s.hb === "low" ? "Haemoglobin is below 10 g/dL: correct it before and during radiotherapy. " : "") + "Relieve hydronephrosis if present, and set nutrition, dental and renal baselines.", tags: [chip("info", "Before day 1")] });
+    if (hivStep) steps.push(hivStep);
+    if (s.ici === "no") {
+      steps.push({ h: "Induction chemotherapy (INTERLACE)", b: "Six weekly cycles, then chemoradiation within 7 days. Adds survival at low cost, a good fit where immunotherapy is unavailable.", rx: "Carboplatin AUC 2 + paclitaxel 80 mg/m² weekly × 6", tags: [chip("ok", "5-yr OS 80% vs 72%")] });
+    }
+    steps.push({ h: "Concurrent chemoradiation", b: "External-beam pelvic radiotherapy (extended field if para-aortic nodes) with weekly platinum, then image-guided brachytherapy. Finish all radiotherapy within 50–56 days.", rx: `EBRT 45–50.4 Gy in 25–28 fractions + nodal boost if involved\n${cis} × 5–6 concurrent\nIGABT to HR-CTV D90 ≥ 85 Gy EQD2`, tags: [chip("info", "Backbone of cure")] });
+    if (s.ici !== "no") {
+      steps.push({ h: "Add pembrolizumab (KEYNOTE-A18)", b: labelFit ? "Stage III–IVA is within the FDA-approved label. Given with chemoradiation and continued as maintenance." : (pending ? "Approved for stage III–IVA. If staging shows IB3–IIB node-negative, this falls outside the label." : "IB3–IIB without nodes is outside the FDA label (III–IVA). Discuss case by case or consider a trial."), rx: "Pembrolizumab 200 mg q3w × 5 with CRT, then 400 mg q6w × 15 (trial schedule)", tags: [labelFit ? chip("ok", "On label") : chip("warn", "Label depends on stage"), chip("ok", "36-mo OS 82.6% vs 74.8%")] });
+      alts.push({ cls: "", h: "Induction chemotherapy with immunotherapy", b: "INTERLACE and KEYNOTE-A18 have not been combined in a completed trial. NCI trial NCT07061977 is testing that." });
+    }
+    if (s.brachy === "ref") alts.push({ cls: "flag", h: "Book brachytherapy before starting", b: "Arrange the referral centre before external-beam radiotherapy starts so total time stays under 56 days." });
+    if (s.brachy === "unk") alts.push({ cls: "flag", h: "Brachytherapy access unconfirmed", b: "An external-beam boost in place of brachytherapy lowers survival. Confirm access early." });
+    if (s.ps === "34") alts.push({ cls: "stop", h: "Performance status 3–4", b: "Concurrent chemoradiation may not be tolerable. Discuss radiotherapy alone or palliative intent." });
+    if (s.renal === "low") alts.push({ cls: "flag", h: "Cisplatin-ineligible", b: "Weekly carboplatin is the usual substitute. If hydronephrosis caused the low clearance, stenting or nephrostomy may restore eligibility." });
+  } else {
+    const rec = g === "rec";
+    title = rec ? "Escalation: persistent or recurrent disease" : "Metastatic (IVB) pathway";
+    chipHtml = chip("crit", rec ? "Escalation" : "Stage IVB");
+    if (rec) steps.push({ h: "Biopsy-confirm and rule in local options first", b: "Central pelvic disease after radiotherapy may be salvageable by radical hysterectomy or pelvic exenteration. Restage with PET-CT." });
+    if (hivStep) steps.push(hivStep);
+    if (s.pdl1 === "ge1" || s.pdl1 === "ge10") {
+      steps.push({ h: "Systemic first line: pembrolizumab + chemotherapy (KEYNOTE-826)", b: "PD-L1 CPS ≥ 1 qualifies.", rx: "Pembrolizumab + cisplatin or carboplatin + paclitaxel ± bevacizumab", tags: [chip("ok", "Median OS 28.6 vs 16.5 mo")] });
+      alts.push({ cls: "", h: "Alternative first line: BEATcc", b: "Atezolizumab + platinum/paclitaxel + bevacizumab, any PD-L1." });
+    } else {
+      steps.push({ h: "Systemic first line: atezolizumab + chemotherapy + bevacizumab (BEATcc)", b: s.pdl1 === "lt1" ? "CPS < 1 excludes pembrolizumab; BEATcc enrolled regardless of PD-L1." : "PD-L1 not tested yet. BEATcc does not need it; KEYNOTE-826 does.", rx: "Atezolizumab + cisplatin/carboplatin + paclitaxel + bevacizumab", tags: [chip("ok", "Median OS 32.1 vs 22.8 mo")] });
+    }
+    steps.push({ h: "Second line", b: "Tisotumab vedotin (innovaTV 301), or cemiplimab if no prior checkpoint inhibitor (EMPOWER-Cervical 1).", tags: [chip("info", "OS HR 0.70 / 0.69")] });
+    if (s.her2 === "3") steps.push({ h: "HER2 3+: trastuzumab deruxtecan", b: "Tumour-agnostic approval for HER2 IHC 3+ solid tumours after prior therapy (DESTINY-PanTumor02).", tags: [chip("ok", "Biomarker match")] });
+    if (s.mmr === "d") steps.push({ h: "dMMR / MSI-H: pembrolizumab", b: "Tumour-agnostic indication.", tags: [chip("ok", "Biomarker match")] });
+    steps.push({ h: "Palliative radiotherapy and supportive care", b: "For bleeding or pain, at any line." });
+  }
+  if (s.hpv === "neg") alts.push({ cls: "flag", h: "p16-negative", b: "HPV-independent SCC carries a worse prognosis and excludes HPV-targeted trials. Ask pathology to review, since non-keratinizing morphology is usually HPV-associated." });
+  return { title, chipHtml, steps, alts, pending: group(s.stage) === "pending" };
+}
+
+function alerts() {
+  const A = [];
+  if (S.hb === "low" && S.tx !== "done") A.push({ lvl: "warn", t: "Correct anaemia", d: "Hb < 10 g/dL lowers radiotherapy effect in hypoxic tumour.", own: "Clinical oncology" });
+  if (S.tox === "cr") A.push({ lvl: "crit", t: "Creatinine rising on cisplatin", d: "Hydrate, image for hydronephrosis, consider switching to weekly carboplatin.", own: "Clinical oncology" });
+  if (S.tox === "g3") A.push({ lvl: "crit", t: "Hold weekly chemotherapy", d: "Continue radiotherapy without a gap while toxicity recovers.", own: "Clinical oncology" });
+  if (S.ott === "gt") A.push({ lvl: "crit", t: "Treatment time over 56 days", d: "Each extra day is linked to lower pelvic control. Record the cause and prevent further gaps.", own: "Radiation oncology" });
+  if (S.resp === "pr") A.push({ lvl: "warn", t: "Persistent disease at 12 weeks", d: "Repeat PET-CT or biopsy in 8–12 weeks; refer for salvage surgery assessment if confirmed.", own: "Gyn-onc" });
+  if (escalated()) A.push({ lvl: "crit", t: "Enter the escalation pathway", d: "Biopsy-confirm, restage, test PD-L1 / HER2 / MMR if not done, and re-present at the tumour board.", own: "Tumour board" });
+  return A;
+}
+
+function loopHtml(active) {
+  const nodes = [["observe", "Observe"], ["decide", "Decide"], ["act", "Act"], ["update", "Update"]];
+  return nodes.map(([k, t], i) => `<span class="node${k === active ? " on" : ""}">${t}</span>${i < nodes.length - 1 ? '<span class="arr" aria-hidden="true">→</span>' : '<span class="arr" aria-hidden="true">↺</span>'}`).join("");
+}
+
+function renderBoard() {
+  const g = effGroup();
+  let activeN = 1;
+  for (let n = 1; n <= 5; n++) { const ps = phaseState(n); if (ps.open && !ps.done) { activeN = n; break; } if (n === 5 && ps.done) activeN = 5; }
+  const activeLoop = PHASES[activeN - 1].loop;
+  $("loop").innerHTML = loopHtml(activeLoop);
+
+  const applicable = OBS.filter(applies);
+  const doneN = applicable.filter(o => known(o.k)).length;
+  $("readyBar").style.width = (100 * doneN / applicable.length) + "%";
+  $("readyTxt").textContent = `Phase ${activeN} of 5 · ${doneN}/${applicable.length} observations recorded`;
+  $("modeNote").textContent = demo
+    ? "Hypothetical scenario loaded to show the loop. This is an invented scenario, not a real patient's results."
+    : "Showing what the pathology report alone tells us. Results you enter stay in this browser only.";
+  $("modeNote").className = demo ? "small banner warn" : "small muted";
+
+  // queue: open phases, unknown observations, critical first, then alerts
+  const Q = [];
+  alerts().forEach(a => Q.push({ pri: a.lvl === "crit" ? 0 : 1, lvl: a.lvl, t: a.t, d: a.d, own: a.own }));
+  OBS.filter(o => applies(o) && phaseState(o.ph).open && !known(o.k)).forEach(o => {
+    Q.push({ pri: isCrit(o) ? 0 : 2, lvl: isCrit(o) ? "crit" : "warn", t: (effGroup() === "met" && o.actMet) ? o.actMet : o.act, d: `Records: ${o.label}`, own: o.own });
+  });
+  Q.sort((a, b) => a.pri - b.pri);
+  $("queueCount").textContent = `${Q.length} open`;
+  $("queue").innerHTML = Q.length ? Q.slice(0, 8).map(q => `<li><div><strong>${esc(q.t)}</strong><div class="small muted">${esc(q.d)}</div></div><div class="q-side">${chip(q.lvl, q.lvl === "crit" ? "Critical" : "Due")}<span class="own">${esc(q.own)}</span></div></li>`).join("") + (Q.length > 8 ? `<li class="small muted">+ ${Q.length - 8} more in the phases below</li>` : "")
+    : `<li><div><strong>No open actions</strong><div class="small muted">Continue follow-up on schedule.</div></div></li>`;
+
+  // phases
+  $("phases").innerHTML = PHASES.map(P => {
+    const ps = phaseState(P.n);
+    const st = ps.done ? chip("ok", "Done") : ps.open ? chip("info", "Active") : chip("warn", "Waiting");
+    const rows = OBS.filter(o => o.ph === P.n && applies(o)).map(o => {
+      const act = (baseGroup() === "met" && o.actMet) ? o.actMet : o.act;
+      return `<div class="obs${known(o.k) ? " is-known" : ""}"><div class="obs-act"><span class="kind">Action</span><span>${esc(act)}</span><span class="own">${esc(o.own)}</span></div>
+        <div class="obs-in"><label for="ob-${o.k}"><span class="kind">Observation</span> ${esc(o.label)}${isCrit(o) ? ' <span class="req">required</span>' : ""}</label>
+        <select id="ob-${o.k}" data-k="${o.k}" ${ps.open ? "" : "disabled"}>${o.opts.map(x => `<option value="${x.v}"${S[o.k] === x.v ? " selected" : ""}>${esc(x.t)}</option>`).join("")}</select></div></div>`;
+    }).join("");
+    let extra = "";
+    if (P.n === 2) extra = pathwayHtml(pathway({ ...S }), true);
+    if (P.n === 5 && escalated()) extra = pathwayHtml(pathway({ ...S, stage: "REC" }), false);
+    if (P.n === 5 && S.resp === "cr" && !escalated()) extra = `<div class="banner info">Complete metabolic response. This is the first milestone toward no evidence of disease (NED). Stay in surveillance; any new symptom re-enters the loop at phase 1.</div>`;
+    const why = !ps.open ? `<p class="small muted">Opens when phase ${P.n - 1} is done.</p>` : "";
+    return `<article class="phase${ps.open ? "" : " locked"}${P.n === activeN ? " current" : ""}"><header><span class="ph-n">Phase ${P.n} · ${PHASES[P.n - 1].loop}</span><h3>${esc(P.name)}</h3>${st}</header><p class="small muted">${esc(P.sub)}</p>${why}<div class="obs-list">${rows}</div>${extra}</article>`;
+  }).join("");
+  $("phases").querySelectorAll("select").forEach(sel => sel.addEventListener("change", ev => setObs(ev.target.dataset.k, ev.target.value)));
+
+  $("log").innerHTML = LOG.length ? LOG.slice(0, 12).map(e => `<li><span class="mono small muted">${esc(e.at)}</span><span><strong>${esc(e.label)}</strong> → ${esc(e.val)}</span></li>`).join("") : `<li class="small muted">No observations yet. Record one in the phases above.</li>`;
+
+  renderForest(g);
+  renderTrials();
+  save();
+}
+
+function pathwayHtml(P, primary) {
+  return `<div class="pathcard${primary ? "" : " esc"}"><div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:baseline;"><h3>${esc(P.title)}</h3>${P.chipHtml}</div>
+    ${P.pending && primary ? `<div class="banner warn">Stage is not confirmed. The MRI size (4.6 cm) points to IB3 or higher, so this shows the locally advanced pathway until staging is complete.</div>` : ""}
+    <ol class="path">${P.steps.map(st => `<li><div class="body"><h3>${esc(st.h)}</h3><p>${esc(st.b)}</p>${st.rx ? `<div class="rx">${esc(st.rx).replace(/\n/g, "<br>")}</div>` : ""}${st.tags ? `<div class="tags">${st.tags.join("")}</div>` : ""}</div></li>`).join("")}</ol>
+    <div style="display:grid; gap:10px;">${P.alts.map(a => `<div class="alt ${a.cls}"><strong>${esc(a.h)}</strong><p class="small">${esc(a.b)}</p></div>`).join("")}</div></div>`;
+}
+
+function setObs(k, v) {
+  S[k] = v;
+  const o = OBS.find(x => x.k === k);
+  const d = new Date();
+  LOG.unshift({ at: d.toLocaleDateString(undefined, { day: "2-digit", month: "short" }) + " " + d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }), label: o.label, val: optText(k, v) });
+  LOG = LOG.slice(0, 40);
+  renderBoard();
+  const el = $("ob-" + k); if (el) el.focus({ preventScroll: true });
+}
+$("demoBtn").addEventListener("click", () => {
+  S = { ...DEFAULTS, ...DEMO }; demo = true;
+  LOG = Object.keys(DEMO).filter(k => DEMO[k] !== DEFAULTS[k]).reverse().map(k => ({ at: "example", label: OBS.find(o => o.k === k).label, val: optText(k, DEMO[k]) }));
+  renderBoard();
+});
+$("resetBtn").addEventListener("click", () => { S = { ...DEFAULTS }; LOG = []; demo = false; renderBoard(); });
+
+/* ---------- section 4: forest plot ---------- */
+$("evRows").innerHTML = EVIDENCE.map(e => `<tr><td class="feat">${esc(e.trial)}</td><td>${esc(e.setting)}</td><td>${esc(e.reg)}</td><td class="num">${e.hr.toFixed(2)} (${e.lo.toFixed(2)}–${e.hi.toFixed(2)})</td><td>${esc(e.head)}</td></tr>`).join("");
+function renderForest(g) {
+  const svg = $("forest");
+  const W = 760, rowH = 38, top = 14, left = 190, right = 30, n = EVIDENCE.length, H = top + n * rowH + 40;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.style.minWidth = "560px";
+  const lo = Math.log(0.3), hi = Math.log(1.25);
+  const X = v => left + (Math.log(v) - lo) / (hi - lo) * (W - left - right);
+  const ticks = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.0, 1.2];
+  let h = "";
+  ticks.forEach(t => { h += `<line class="grid" x1="${X(t)}" x2="${X(t)}" y1="${top}" y2="${top + n * rowH}"/><text x="${X(t)}" y="${top + n * rowH + 16}" text-anchor="middle">${t.toFixed(1)}</text>`; });
+  h += `<line class="ref" x1="${X(1)}" x2="${X(1)}" y1="${top - 4}" y2="${top + n * rowH + 4}"/>`;
+  h += `<text x="${X(0.3)}" y="${H - 4}">← favours added treatment</text><text x="${X(1.25)}" y="${H - 4}" text-anchor="end">favours control →</text>`;
+  EVIDENCE.forEach((e, i) => {
+    const y = top + i * rowH + rowH / 2, on = e.groups.includes(g);
+    h += `<rect class="row-hit${on ? " on" : ""}" data-i="${i}" x="0" y="${y - rowH / 2 + 2}" width="${W}" height="${rowH - 4}" rx="4"/>`;
+    h += `<text class="lbl" x="8" y="${y + 4}" style="font-weight:${on ? 600 : 400}">${esc(e.trial)}</text>`;
+    h += `<line class="ci" x1="${X(e.lo)}" x2="${X(e.hi)}" y1="${y}" y2="${y}" style="opacity:${on ? 1 : 0.45}" pointer-events="none"/>`;
+    h += `<circle class="pt" cx="${X(e.hr)}" cy="${y}" r="6" style="opacity:${on ? 1 : 0.45}" pointer-events="none"/>`;
+    h += `<text x="${X(e.hi) + 8}" y="${y + 4}" pointer-events="none">${e.hr.toFixed(2)}</text>`;
+  });
+  svg.innerHTML = h;
+  svg.querySelectorAll(".row-hit").forEach(r => {
+    const e = EVIDENCE[+r.dataset.i];
+    r.addEventListener("mousemove", ev => showTip(`<b>${esc(e.trial)}</b><br>${esc(e.reg)}<br>OS HR ${e.hr.toFixed(2)} (${e.lo.toFixed(2)}–${e.hi.toFixed(2)})<br>${esc(e.pop)}`, ev));
+    r.addEventListener("mouseleave", hideTip);
+  });
+}
+
+/* ---------- section 5: delivery model ---------- */
+const PRESETS = [
+  { k: "o2", name: "Oxygen", lam: 100, thr: 0.3, note: "Oxygen penetrates roughly 100–150 µm from a capillary. Cells beyond that are hypoxic and 2–3 times more resistant to radiation. This is why anaemia is corrected and overall treatment time kept short." },
+  { k: "cis", name: "Cisplatin", lam: 160, thr: 0.3, note: "Small molecule, diffuses well but binds and is consumed in tissue. In chemoradiation its main job is radiosensitisation, so reaching hypoxic zones matters." },
+  { k: "igg", name: "Anti-PD-1 IgG", lam: 45, thr: 0.3, note: "A 150 kDa antibody moves slowly through dense collagen and binds its target near the vessel (binding-site barrier). Its target is T cells, which can migrate, so distance matters less than for a cytotoxic." },
+  { k: "adc", name: "ADC (tisotumab vedotin)", lam: 55, thr: 0.3, note: "Antibody-sized carrier with the same transport limits. The released payload can kill neighbouring cells (bystander effect), which partly offsets poor penetration." }
+];
+let presetK = "o2";
+$("presets").innerHTML = PRESETS.map(p => `<button type="button" data-k="${p.k}" aria-pressed="${p.k === presetK}">${esc(p.name)}</button>`).join("");
+$("presets").addEventListener("click", ev => {
+  const b = ev.target.closest("button"); if (!b) return;
+  const p = PRESETS.find(x => x.k === b.dataset.k); presetK = p.k;
+  $("rg-lam").value = p.lam; $("rg-thr").value = p.thr;
+  $("presets").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x.dataset.k === presetK));
+  renderDiff();
+});
+["rg-L", "rg-lam", "rg-thr"].forEach(id => $(id).addEventListener("input", renderDiff));
+const conc = (x, L, lam) => Math.cosh((L - x) / lam) / Math.cosh(L / lam);
+function renderDiff() {
+  const L = +$("rg-L").value, lam = +$("rg-lam").value, thr = +$("rg-thr").value;
+  $("out-L").textContent = L + " µm"; $("out-lam").textContent = lam + " µm"; $("out-thr").textContent = Math.round(thr * 100) + "%";
+  const p = PRESETS.find(x => x.k === presetK); $("presetNote").textContent = p.note;
+  const W = 520, H = 260, l = 44, r = 14, t = 12, b = 36, XM = 600;
+  const X = x => l + x / XM * (W - l - r), Y = c => t + (1 - c) * (H - t - b);
+  const svg = $("diff"); svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  let h = "";
+  [0, 0.25, 0.5, 0.75, 1].forEach(c => { h += `<line class="grid" x1="${l}" x2="${W - r}" y1="${Y(c)}" y2="${Y(c)}"/><text x="${l - 6}" y="${Y(c) + 4}" text-anchor="end">${Math.round(c * 100)}%</text>`; });
+  [0, 100, 200, 300, 400, 500, 600].forEach(x => { h += `<text x="${X(x)}" y="${H - b + 16}" text-anchor="middle">${x}</text>`; });
+  h += `<text x="${W - r}" y="${H - 4}" text-anchor="end">distance from vessel (µm)</text>`;
+  const N = 120, pts = [];
+  for (let i = 0; i <= N; i++) { const x = L * i / N; pts.push([x, conc(x, L, lam)]); }
+  const line = pts.map((q, i) => `${i ? "L" : "M"}${X(q[0]).toFixed(1)},${Y(q[1]).toFixed(1)}`).join("");
+  h += `<path class="area" d="${line}L${X(L)},${Y(0)}L${X(0)},${Y(0)}Z"/>`;
+  let xStar = null;
+  const cmin = conc(L, L, lam);
+  if (cmin < thr) { xStar = L - lam * Math.acosh(thr * Math.cosh(L / lam)); }
+  if (xStar !== null) h += `<rect class="under" x="${X(xStar)}" y="${t}" width="${X(L) - X(xStar)}" height="${H - t - b}"/>`;
+  h += `<line class="thr" x1="${l}" x2="${W - r}" y1="${Y(thr)}" y2="${Y(thr)}"/><text x="${W - r}" y="${Y(thr) - 6}" text-anchor="end" style="fill:var(--crit)">effective level</text>`;
+  h += `<path class="curve" d="${line}"/>`;
+  h += `<line class="grid" x1="${X(L)}" x2="${X(L)}" y1="${t}" y2="${H - b}" style="stroke:var(--ink-2)"/><text x="${X(L) - 4}" y="${t + 12}" text-anchor="end">far edge</text>`;
+  h += `<line class="xh" id="xh" x1="0" x2="0" y1="${t}" y2="${H - b}" visibility="hidden"/><circle class="xh-dot" id="xhd" r="5" cx="0" cy="0" visibility="hidden"/>`;
+  h += `<rect x="${l}" y="${t}" width="${W - l - r}" height="${H - t - b}" fill="transparent" id="diffHit"/>`;
+  svg.innerHTML = h;
+  const frac = xStar === null ? 0 : (L - xStar) / L;
+  $("st-under").textContent = Math.round(frac * 100) + "%";
+  $("st-min").textContent = Math.round(cmin * 100) + "%";
+  $("st-depth").textContent = xStar === null ? "reaches all" : Math.round(xStar) + " µm";
+  const hit = $("diffHit"), xh = $("xh"), xhd = $("xhd");
+  hit.addEventListener("mousemove", ev => {
+    const pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY;
+    const loc = pt.matrixTransform(svg.getScreenCTM().inverse());
+    const x = Math.max(0, Math.min(L, (loc.x - l) / (W - l - r) * XM));
+    const c = conc(x, L, lam);
+    xh.setAttribute("x1", X(x)); xh.setAttribute("x2", X(x)); xh.setAttribute("visibility", "visible");
+    xhd.setAttribute("cx", X(x)); xhd.setAttribute("cy", Y(c)); xhd.setAttribute("visibility", "visible");
+    showTip(`${Math.round(x)} µm from vessel<br><b>${Math.round(c * 100)}%</b> of vessel level${c < thr ? "<br>below effective level" : ""}`, ev);
+  });
+  hit.addEventListener("mouseleave", () => { xh.setAttribute("visibility", "hidden"); xhd.setAttribute("visibility", "hidden"); hideTip(); });
+}
+$("deliveryTake").innerHTML = [
+  ["Radiotherapy carries the cure", "Photons are not transport-limited, but their effect depends on oxygen. Keep haemoglobin up, avoid treatment gaps, finish within 56 days."],
+  ["Brachytherapy fixes geometry", "Placing the source inside the tumour gives the highest dose where the tumour is bulkiest. It is the step most tied to cure."],
+  ["Stroma is a research target", "Stroma-remodelling agents (TGF-β, FAP, hyaluronidase approaches) are trial-only. None is proven in cervical cancer yet."]
+].map(([h, b]) => `<div class="panel"><h3>${esc(h)}</h3><p class="small">${esc(b)}</p></div>`).join("");
+
+/* ---------- section 6: trials ---------- */
+function renderTrials() {
+  const s = S, g = effGroup();
+  const fit = (tr) => {
+    if (tr.groups.includes("lacc3")) return g === "lacc" && (isStage3plus(s.stage) || s.stage === "PENDING") ? (s.stage === "PENDING" ? "maybe" : "yes") : "no";
+    return tr.groups.includes(g) ? (group(s.stage) === "pending" && !escalated() ? "maybe" : "yes") : "no";
+  };
+  const order = { yes: 0, maybe: 1, no: 2 };
+  const rows = TRIALS.map(tr => ({ tr, f: fit(tr) })).sort((a, b) => order[a.f] - order[b.f]);
+  $("trialGrid").innerHTML = rows.map(({ tr, f }) => {
+    const tags = [f === "yes" ? chip("ok", "Stage fits") : f === "maybe" ? chip("warn", "Fits if staging confirms") : chip("info", "Other stage")];
+    if (tr.hpv) tags.push(s.hpv === "pos" ? chip("ok", "HPV+ confirmed") : s.hpv === "neg" ? chip("crit", "Needs HPV+") : chip("warn", "Needs HPV+ result"));
+    if (tr.cps) tags.push(s.pdl1 === "ge1" || s.pdl1 === "ge10" ? chip("ok", "CPS ≥ 1") : chip("warn", "Needs CPS ≥ 1"));
+    return `<article class="panel trial" style="opacity:${f === "no" ? 0.6 : 1}"><span class="id">${tr.nct} · <a href="https://clinicaltrials.gov/study/${tr.nct}" target="_blank" rel="noopener">registry</a></span><h3>${esc(tr.t)}</h3><p class="small muted">${esc(tr.sp)}</p><p class="small">${esc(tr.why)}</p><div class="fit">${tags.join("")}</div></article>`;
+  }).join("");
+}
+
+/* ---------- section 7: open questions ---------- */
+const QUESTIONS = [
+  ["Gyn-onc / clinical oncology", "Where pembrolizumab is unaffordable, is INTERLACE induction the best available addition to chemoradiation for stage III disease in Nigeria?"],
+  ["Radiation oncology", "With brachytherapy only at a referral centre, what logistics keep overall treatment time under 56 days in practice?"],
+  ["Pathology", "Should p16 and PD-L1 be run on this block now, and would a negative p16 change the plan?"],
+  ["HIV medicine", "For a woman living with HIV on TDF-based ART, when should the backbone be switched before weekly cisplatin?"],
+  ["Mathematical oncology", "Which measurable stroma readouts (DCE-MRI perfusion, interstitial pressure, collagen imaging) would make a transport model informative for radiotherapy planning rather than decorative?"]
+];
+$("qList").innerHTML = QUESTIONS.map(([who, q]) => `<li class="panel"><span class="eyebrow">${esc(who)}</span><p>${esc(q)}</p></li>`).join("");
+
+/* ---------- section 8 ---------- */
+$("stackRows").innerHTML = STACK.map(r => `<tr><td class="feat">${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td><td>${/Ready/.test(r[3]) ? chip("ok", r[3]) : /repo|Public/.test(r[3]) ? chip("info", r[3]) : chip("warn", r[3])}</td></tr>`).join("");
+
+renderDiff();
+renderBoard();
+</script>
