@@ -81,6 +81,7 @@ it is attached to.
 | `apps/case_board/DEPLOY.md` | Static deployment notes |
 | `CITATION.cff` | Citation metadata |
 | `DISCLAIMER.md` | Research-only boundary |
+| `docs/ZENODO_ORCID.md` | How the DOI was obtained: ORCID, then Zenodo |
 
 ## The case board
 
