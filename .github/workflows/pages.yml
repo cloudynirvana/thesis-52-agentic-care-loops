@@ -37,6 +37,9 @@ jobs:
           python3 /tmp/thesis_check.py .
 
       - uses: actions/configure-pages@v5
+        with:
+          # Turn Pages on from the workflow itself, using its pages: write scope.
+          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
